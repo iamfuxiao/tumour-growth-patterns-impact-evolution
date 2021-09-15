@@ -66,11 +66,18 @@ Source Data include Excel workbooks containing data for Main Figures and Extende
 Python or R scripts that read the Source Data for producing plots presented in the Main Figures and Extended Data Figures are provided for reference.
 
 ## License
+Distributed under **The Francis Crick Institute License**.
 
 ## Contact
 Please contact Xiao Fu and Paul A. Bates for questions about the source code.
-* Xiao Fu ([Crick Email](xiao.fu@crick.ac.uk "xiao.fu@crick.ac.uk"), [Gmail](iamfuxiao@gmail.com "iamfuxiao@gmail.com"))
-* Paul A. Bates ([Crick Email](paul.bates@crick.ac.uk "paul.bates@crick.ac.uk"))
+* Xiao Fu - xiao.fu@crick.ac.uk or iamfuxiao@gmail.com; @XiaoFu90
+* Paul A. Bates - paul.bates@crick.ac.uk; @PaulBatesBMM
 
 ## Acknowledgements
-The work 
+The code was developed in the collaboration between multiple research labs at the Francis Crick Institute:
+* ([Biomolecular Modelling Laboratory](https://www.crick.ac.uk/research/labs/paul-bates "Biomolecular Modelling"))
+* ([Tumour Cell Biology Laboratory](https://www.crick.ac.uk/research/labs/erik-sahai "Tumour Cell Biology"))
+* ([Cancer Dynamics Laboratory](https://www.crick.ac.uk/research/labs/samra-turajlic "Cancer Dynamics"))
+* ([Cancer Evolution and Genome Instability Laboratory](https://www.crick.ac.uk/research/labs/charles-swanton "Cancer Evolution and Genome Instability"))
+
+
