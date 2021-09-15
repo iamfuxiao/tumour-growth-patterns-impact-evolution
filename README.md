@@ -15,7 +15,7 @@
 A coarse-grained cellular automaton model is developed for this study. See the paper link above for more details.
 
 ### Source Code
-The computer code is written in CUDA C++. A brief description of functions, key parameters, and output files is given below.
+The computer code is written in CUDA C++. A brief description of functions and key parameters in the code, output files produced, and compilation of the code is given below.
 
 #### functions
 * `main(...)` function: control of simulation flow, including intialisation, iterations of growth, death, and driver acquisition, and writing outputs.
@@ -44,7 +44,25 @@ The computer code is written in CUDA C++. A brief description of functions, key 
 * `*cloneSizeOverTime.txt`: prevalence (i.e., number of tumour voxels harbouring a given clone) of clones over time.
 * `*eventSizeOverTime.txt`: prevalence (i.e., number of tumour voxels harbouring a given clone) of RCC drivers over time.
 
+#### Compilation
+The code can be complied by running command `cmake ../ && make -j` in a sub-directory (e.g., `src/build/`) of the directory (e.g., `src/`) that contains the source code. Cmake (version 3.12.1) and Cuda compilation tools (release 9.2) were used in a Linux environment in this study.
+An exemplar folder structure is given below.
+"""
+└── src
+    ├── build
+    ├── CMakeLists.txt
+    ├── tumour_growth_patterns.cu
+    └── tumour_growth_patterns.cuh
+"""
+After compilation, an executable named `tumour_growth_patterns` is created. 
+
 ## Source Data and Scripts
+
+### Source Data
+Source Data include Excel workbooks containing data for Main Figures and Extended Data Figures presented in the paper, with figure number indicated in the name of workbooks.
+
+### Scripts
+Python or R scripts that read the Source Data for producing plots presented in the Main Figures and Extended Data Figures are provided for reference.
 
 ## Acknowledgements
 
