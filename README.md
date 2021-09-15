@@ -47,13 +47,13 @@ The computer code is written in CUDA C++. A brief description of functions and k
 #### Compilation
 The code can be complied by running command `cmake ../ && make -j` in a sub-directory (e.g., `src/build/`) of the directory (e.g., `src/`) that contains the source code. Cmake (version 3.12.1) and Cuda compilation tools (release 9.2) were used in a Linux environment in this study.
 An exemplar folder structure is given below.
-"""
-└── src
-    ├── build
-    ├── CMakeLists.txt
-    ├── tumour_growth_patterns.cu
-    └── tumour_growth_patterns.cuh
-"""
+
+>└── src
+>    ├── build
+>    ├── CMakeLists.txt
+>    ├── tumour_growth_patterns.cu
+>    └── tumour_growth_patterns.cuh
+
 After compilation, an executable named `tumour_growth_patterns` is created. 
 
 ## Source Data and Scripts
