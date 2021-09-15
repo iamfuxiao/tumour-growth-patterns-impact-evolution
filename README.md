@@ -75,9 +75,9 @@ Please contact Xiao Fu and Paul A. Bates for questions about the source code.
 
 ## Acknowledgements
 The code was developed in the collaboration between multiple research labs at the Francis Crick Institute:
-* ([Biomolecular Modelling Laboratory](https://www.crick.ac.uk/research/labs/paul-bates "Biomolecular Modelling"))
-* ([Tumour Cell Biology Laboratory](https://www.crick.ac.uk/research/labs/erik-sahai "Tumour Cell Biology"))
-* ([Cancer Dynamics Laboratory](https://www.crick.ac.uk/research/labs/samra-turajlic "Cancer Dynamics"))
-* ([Cancer Evolution and Genome Instability Laboratory](https://www.crick.ac.uk/research/labs/charles-swanton "Cancer Evolution and Genome Instability"))
+* [Biomolecular Modelling Laboratory](https://www.crick.ac.uk/research/labs/paul-bates "Biomolecular Modelling")
+* [Tumour Cell Biology Laboratory](https://www.crick.ac.uk/research/labs/erik-sahai "Tumour Cell Biology")
+* [Cancer Dynamics Laboratory](https://www.crick.ac.uk/research/labs/samra-turajlic "Cancer Dynamics")
+* [Cancer Evolution and Genome Instability Laboratory](https://www.crick.ac.uk/research/labs/charles-swanton "Cancer Evolution and Genome Instability")
 
 
