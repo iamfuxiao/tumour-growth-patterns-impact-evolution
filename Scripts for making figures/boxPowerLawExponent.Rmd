@@ -1,0 +1,106 @@
+---
+title: "boxPowerLawExponent.Rmd"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+# Box plots of bootstrap power law exponents characterising spatial distribution of microdiversity hotspots
+
+```{r}
+
+library(ggplot2)
+library(readxl)
+library(ggpubr)
+
+```
+
+## read data
+```{r}
+data_path <- "../Source data for figures/Source_Data_Figure_3/SourceData_Fig3fgh.xlsx"
+data_fig3f <- read_excel(path = data_path, sheet = "SourceDataFig3f")
+data_fig3g <- read_excel(path = data_path, sheet = "SourceDataFig3g")
+data_fig3h <- read_excel(path = data_path, sheet = "SourceDataFig3h")
+```
+
+## Figure 3f
+```{r}
+colors = c("Red", "Blue")
+theme_set(theme_classic())
+data <- data_fig3f
+g <- ggplot(
+  data,
+  aes(x = as.factor(ProbaDriverAcqu), y = Exponent, color = GrowthMode)
+  ); ylab = "Bootstrapped exponent";  ylim = c(2, 4.5)
+p <- g +
+  geom_boxplot(outlier.size = 0.5) +
+  scale_color_manual(values = colors) +
+  labs(x = "Driver acquisition probability", y = ylab) +
+  ylim(ylim) +
+  stat_compare_means(aes(group = Label), method = "wilcox.test", label = "p.signif") +
+  theme(
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 6),  
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 8),
+  )
+print(p)
+```
+
+## Figure 3g
+```{r}
+data <- data_fig3g
+colors = c("Purple", "Magenta", "#4B0082")
+my_comparisons <- list( c("complete.set", "relapse"), c("complete.set", "no.relapse"), c("no.relapse", "relapse") )
+g <- ggplot(
+  data,
+  aes(x = Label, y = Exponent, color = Label)
+  ); ylab = "Bootstrapped exponent";  ylim = c(2, 4.5)
+p <- g +
+  geom_boxplot(outlier.size = 0.5) +
+  scale_color_manual(values = colors) +
+  labs(x = "", y = ylab) +
+  ylim(ylim) +
+  stat_compare_means(comparisons = my_comparisons, method = "wilcox.test", label = "p.signif") +
+  theme(
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 6),  
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 8),
+  )
+print(p)
+```
+
+## Figure 3h
+```{r}
+data <- data_fig3h
+colors = c("#4B0082", "Purple", "Magenta", "#d8bfd8")
+my_comparisons <- list( c("attenuated.progression", "complete.set"), c("attenuated.progression", "no.progression"), c("attenuated.progression", "rapid.progression") )
+g <- ggplot(
+  data,
+  aes(x = Label, y = Exponent, color = Label)
+  ); ylab = "Bootstrapped exponent";  ylim = c(2, 4.5)
+p <- g +
+  geom_boxplot(outlier.size = 0.5) +
+  scale_color_manual(values = colors) +
+  labs(x = "", y = ylab) +
+  ylim(ylim) +
+  stat_compare_means(comparisons = my_comparisons, method = "wilcox.test", label = "p.signif") +
+  theme(
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 6),  
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 8),
+  )
+print(p)
+```
+
+

@@ -1,0 +1,86 @@
+---
+title: "boxMacrodiversity.Rmd"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+# Box plots of whole-tumour ccf of parental clone and shannon diversity
+
+```{r}
+
+library(ggplot2)
+library(readxl)
+library(ggpubr)
+
+```
+
+## read data
+```{r}
+data_path <- "../Source data for figures/Source_Data_Figure_2/SourceData_Fig2de.xlsx"
+data_fig2d <- read_excel(path = data_path, sheet = "SourceDataFig2d")
+data_fig2e <- read_excel(path = data_path, sheet = "SourceDataFig2e")
+```
+
+## Figure 2d
+```{r}
+colors = c("Red", "Blue")
+theme_set(theme_classic())
+g <- ggplot(
+  data_fig2d[
+    which(data_fig2d$Subclone == "loss_3p/VHL"), 
+  ], 
+  aes(x = as.factor(ProbaDriverAcqu), 
+      y = CCF,
+      color = Condition
+  )
+); ylab = "Whole tumour CCF of parental clone"; ylim = c(0, 1)
+p <- g +
+  geom_boxplot(outlier.size = 0.5) +
+  scale_color_manual(values = colors) +
+  labs(x = "Driver acquisition probability", y = ylab) +
+  ylim(ylim) +
+  stat_compare_means(aes(group = Condition), method = "wilcox.test", label = "p.signif") +
+  theme(
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 6),  
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 8),
+  )
+print(p)
+```
+
+## Figure 2e
+```{r}
+colors = c("Red", "Blue")
+theme_set(theme_classic())
+g <- ggplot(
+  data_fig2e, 
+  aes(
+    x = as.factor(ProbaDriverAcqu), 
+    y = Shannon, 
+    color = Condition
+  )
+); ylab = "Shannon diversity"; ylim = c(0, 8)
+p <- g +
+  geom_boxplot(outlier.size = 0.5) +
+  scale_color_manual(values = colors) +
+  labs(x = "Driver acquisition probability", y = ylab) +
+  ylim(ylim) +
+  stat_compare_means(aes(group = Condition), method = "wilcox.test", label = "p.signif") +
+  theme(
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 6),  
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 8),
+  )
+print(p)
+```
+
+

@@ -1,0 +1,77 @@
+---
+title: "stackedbarCompositionClones.Rmd"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+# Stacked Bar plots of whole-tumour clone composition 
+
+```{r}
+
+library(ggplot2)
+library(readxl)
+library(ggpubr)
+library(dplyr)
+
+```
+
+## read data
+```{r}
+data_path <- "../Source data for figures/Source_Data_Figure_2/SourceData_Fig2c_part1.xlsx"
+data_fig2ci <- read_excel(path = data_path, sheet = "SourceDataFig2ci")
+data_fig2cii <- read_excel(path = data_path, sheet = "SourceDataFig2cii")
+data_fig2ciii <- read_excel(path = data_path, sheet = "SourceDataFig2ciii")
+```
+
+## plotting function
+```{r}
+stacked_bar_plot <- function(data) {
+  data_sorted <- arrange(data, Subclone, desc(CCF))
+  data_sorted$SimID <- factor(data_sorted$SimID, levels = unique(data_sorted[which(data_sorted$Subclone == "loss_3p/VHL"), ]$SimID))
+  
+  # most of the cases (under some conditions, fewer levels need to be used for proper plotting)
+  levels = c("other", "subclone_5", "subclone_4", "subclone_3", "subclone_2", "subclone_1", "loss_3p/VHL")
+  fill_values = c("grey", "saddlebrown", "steelblue", "chocolate", "palegreen4", "yellow", "blueviolet")
+  
+  theme_set(theme_grey())
+  p <- ggplot(data_sorted, aes( fill=factor(Subclone, levels=levels),   y=CCF, x=as.factor(SimID)   )   ) + 
+      geom_bar(position="stack", stat="identity") +
+      xlab("Model replicas")+ ylab("Whole tumour CCF (tumour level)") +
+      theme(axis.text.y=element_blank(),
+            axis.ticks.y=element_blank()) +
+      coord_flip() +
+      labs(fill = "Subclone") +
+      scale_fill_manual(values = fill_values) +
+      scale_x_discrete(limits = rev(levels(data_sorted$SimID))) +
+    theme(
+      axis.text.x = element_text(size = 6),
+      axis.title.x = element_text(size = 8),
+      axis.title.y = element_text(size = 8),
+      legend.text = element_text(size = 6),
+      legend.title = element_text(size = 8)
+    )
+  
+  print (p)
+}
+```
+
+## Figure 2ci (part 1 : whole-tumour clone composition)
+```{r}
+stacked_bar_plot(data_fig2ci)
+```
+## Figure 2cii (part 1 : whole-tumour clone composition)
+```{r}
+stacked_bar_plot(data_fig2cii)
+```
+## Figure 2ciii (part 1 : whole-tumour clone composition)
+```{r}
+stacked_bar_plot(data_fig2ciii)
+```
+
+## Other Supplemental figure panels that can be generated using the plotting fuction above:
+* Extended Data Figure 1c (File: SourceData_ExtendedData_Fig1c_part1.xlsx)
+* Extended Data Figure 2c-d (File: SourceData_ExtendedData_Fig2cd.xlsx)
+* Extended Data Figure 4 (File: SourceData_ExtendedData_Fig4a_part1.xlsx; SourceData_ExtendedData_Fig4b_part1.xlsx)
