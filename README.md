@@ -8,6 +8,7 @@
 
 
 ## About this repository
+This repository contains CUDA C++ Source Code developed for the study as well as Source Data and Scripts for producing Main Figures and Extended Data Figures of the paper.
 
 ## Model and Source Code
 
@@ -64,5 +65,12 @@ Source Data include Excel workbooks containing data for Main Figures and Extende
 ### Scripts
 Python or R scripts that read the Source Data for producing plots presented in the Main Figures and Extended Data Figures are provided for reference.
 
-## Acknowledgements
+## License
 
+## Contact
+Please contact Xiao Fu and Paul A. Bates for questions about the source code.
+* Xiao Fu ([Crick Email](xiao.fu@crick.ac.uk "xiao.fu@crick.ac.uk"), [Gmail](iamfuxiao@gmail.com "iamfuxiao@gmail.com"))
+* Paul A. Bates ([Crick Email](paul.bates@crick.ac.uk "paul.bates@crick.ac.uk"))
+
+## Acknowledgements
+The work 
