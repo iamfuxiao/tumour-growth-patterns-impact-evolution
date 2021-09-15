@@ -11,6 +11,39 @@
 
 ## Model and Source Code
 
+### Model
+A coarse-grained cellular automaton model is developed for this study. See the paper link above for more details.
+
+### Source Code
+The computer code is written in CUDA C++. A brief description of functions, key parameters, and output files is given below.
+
+#### functions
+* `main(...)` function: control of simulation flow, including intialisation, iterations of growth, death, and driver acquisition, and writing outputs.
+* `growth_random_kernel(...)`, `growth2(...)`, and `growth2_volume(...)` functions: implement death and growth events
+* `emerge_subclones_rcc_uponProlif(...)` function: implement acquisition of driver events and accordingly the emergence of subclones
+* `necrosis_kernel(...)` and `necrosis2(...)` functions: implement central necrosis
+* `update_surface_kernel(...)` and `update_surface2(...)` functions: get updated surface voxels
+* `writeDynamics(...)` function: write output files
+
+#### Key parameters
+* `typeGrowthMode`: indicate whether to perform simulations with Surface Growth model ('s') or Volume Growth model ('v')
+* `typeDriverAdvantage`: indicate whether to perform simulations with Saturated model ('s') or Additive model ('a') of driver advantages
+* `flagSaveCellDynamicsOverTime`: boolean variable to indicate whether to save model snapshots over time, by default, false. This is set to true for time-course experiments.
+* `flagTumourApop`: boolean variable to indicate whether to consider death events, by default, true. This is set to false for simulations with necrosis turned on.
+* `flagTumourNecr`: boolean variable to indicate whether to turn on necrosis module, by default, false. This is set to true for simulations with necrosis turned on.
+* `P_COPY`: the probability of tumour voxel duplication. (p_growth in the paper)
+* `P_EMPTY`: the probability of tumour voxel death. (p_death in the paper)
+* `P_EVENT_DRIVER_RCC_UPON_PROLIF`: the probability of driver acquisition. (p_driver in the paper)
+* `P_NECROSIS`: the probability of death due to necrosis, when necrosis module is turned on. (p_necrosis in the paper)
+
+#### Output files
+* `*cellDynamics.txt`: positions and clone ids of tumour voxels on the 3D tumour surface. 
+* `*cellDynamicsXY.txt`: positions and clone ids of tumour voxels within the 2D tumour section.
+* `*cloneEventsOrder.txt`: ids of paried child and parent clones.
+* `*cloneEvents.txt`: clone id and driver events specific to that clone.
+* `*cloneSizeOverTime.txt`: prevalence (i.e., number of tumour voxels harbouring a given clone) of clones over time.
+* `*eventSizeOverTime.txt`: prevalence (i.e., number of tumour voxels harbouring a given clone) of RCC drivers over time.
+
 ## Source Data and Scripts
 
 ## Acknowledgements
