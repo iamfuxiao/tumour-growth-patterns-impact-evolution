@@ -9,10 +9,11 @@
 
 ## Citation
 
-- **Source code**: Please kindly cite the following if you use the CUDA C++ source code in your own research.
-Fu, X. et al. Spatial patterns of tumour growth impact clonal diversification. *Figshare* https://doi.org/10.25418/crick.17032406 (2021).
+* **Source code**: Please kindly cite the following if you use the CUDA C++ source code in your own research.
 
-- **Paper**: (to be updated upon publication)
+  * Fu, X. et al. Spatial patterns of tumour growth impact clonal diversification. *Figshare* https://doi.org/10.25418/crick.17032406 (2021).
+
+* **Paper**: (to be updated upon publication)
 
 ## About this repository
 This repository contains CUDA C++ Source Code developed for the study as well as Source Data and Scripts for producing Main Figures and Extended Data Figures of the paper.
