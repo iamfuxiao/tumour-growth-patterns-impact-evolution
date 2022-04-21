@@ -21,6 +21,8 @@ using namespace std;
 #define FOUTPUT T-1
 #define FOUTPUT_SURF 10
 #define NTHR 1024
+// set UM_ENABLED false if unified memory or cudaMallocManaged is not supported
+#define UM_ENABLED false
 const pid_t PROC_ID               =   getpid();
 
 // tumour essential
