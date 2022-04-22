@@ -1,6 +1,16 @@
 // Note that "Cell" or "cell" is a coarse-grained representation in this work
 #include "tumour_growth_patterns.cuh"
 
+/* --------------- CUDA Error Checking ---------------- */
+static void CheckCUDARet( cudaError_t err, const char * msg)
+{
+    if (err != cudaSuccess)
+    {
+        printf("\t%s when calling %s\n", cudaGetErrorString(err), msg);
+        exit(-1);
+    }
+}
+
 /* ---------------- Cells ------------------ */
 Cell::Cell() {}
 Cell::Cell(int id, bool alive, vector<int> loc)
@@ -26,18 +36,29 @@ int main(int argc, char** argv)
 
     vector<Cell> vecCell;
 
-    // ... Allocate Unified Memory -- accessible from CPU or GPU
-    cudaError_t r   = cudaMallocManaged(&tumour, N*N*N*sizeof(char));
-    cudaError_t rr  = cudaMallocManaged(&clone, N*N*N*sizeof(long));
-    cudaError_t rrr = cudaMallocManaged(&cellids, N*N*N*sizeof(int));
-    if (r != cudaSuccess)
+    if (UM_ENABLED)
     {
-        printf("CUDA Error on %s\n", cudaGetErrorString(r));
-        exit(0);
-    } else {
-        size_t total_mem, free_mem;
-        cudaMemGetInfo(&free_mem, &total_mem);
-        std::cout << " Currently " << free_mem << " bytes free" << std::endl;
+        // ... Allocate Unified Memory -- accessible from CPU or GPU
+        cudaError_t r   = cudaMallocManaged(&tumour, N*N*N*sizeof(char));
+        cudaError_t rr  = cudaMallocManaged(&clone, N*N*N*sizeof(long));
+        cudaError_t rrr = cudaMallocManaged(&cellids, N*N*N*sizeof(int));
+        if (r != cudaSuccess)
+        {
+            printf("CUDA Error on %s\n", cudaGetErrorString(r));
+            exit(0);
+        }
+        else
+        {
+            size_t total_mem, free_mem;
+            cudaMemGetInfo(&free_mem, &total_mem);
+            std::cout << " Currently " << free_mem << " bytes free" << std::endl;
+        }
+    }
+    else
+    {
+        tumour = (char *) malloc(N*N*N*sizeof(char));
+        clone = (long *) malloc(N*N*N*sizeof(long));
+        cellids = (int *) malloc(N*N*N*sizeof(int));
     }
 
     // [2] initialise the first cell
@@ -146,9 +167,15 @@ int main(int argc, char** argv)
     }
 
     // [6] de-allocate memory
-    cudaFree(tumour);
-    cudaFree(cellids);
-    cudaFree(clone);
+    if (UM_ENABLED) {
+        cudaFree(tumour);
+        cudaFree(cellids);
+        cudaFree(clone);
+    } else {
+        free(tumour);
+        free(cellids);
+        free(clone);
+    }
 
     return 0;
 }
@@ -318,7 +345,15 @@ void growth2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCell,
     // ... prepare random numbers for cell death probability
     int n_sites_is_cell = vecCellShu.size();
     float * ra01, * ptr_ra;
-    cudaError_t rrrr = cudaMallocManaged(&ra01, n_sites_is_cell*sizeof(float));
+
+    if (UM_ENABLED)
+    {
+        cudaError_t rrrr = cudaMallocManaged(&ra01, n_sites_is_cell*sizeof(float));
+    } else
+    {
+        ra01 = (float *) malloc(n_sites_is_cell*sizeof(float));
+    }
+
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<> dis(0, 1);   //uniform distribution between 0 and 1
@@ -367,7 +402,14 @@ void growth2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCell,
                 vecCellShuValid.push_back(*it_C);   // add this cell to a vector pending probabilistic proliferation
         }
     }
-    cudaFree(ra01);
+    if (UM_ENABLED)
+    {
+        cudaFree(ra01);
+    }
+    else
+    {
+        free(ra01);
+    }
 
 
     // -------------------------------------------------------
@@ -379,9 +421,20 @@ void growth2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCell,
     int n_sites_valid = vecCellShuValid.size();
 
     cout << "[3] allocate memory for valid sites : cudaMallocManaged" << endl;
-    cudaError_t r2 = cudaMallocManaged(&sites_valid, n_sites_valid*3*sizeof(int));
-    cudaError_t r3 = cudaMallocManaged(&sites_new, n_sites_valid*3*sizeof(int));
-    cudaError_t r5 = cudaMallocManaged(&sites_valid_pcopy, n_sites_valid*sizeof(float));
+
+    if (UM_ENABLED)
+    {
+        cudaError_t r2 = cudaMallocManaged(&sites_valid, n_sites_valid*3*sizeof(int));
+        cudaError_t r3 = cudaMallocManaged(&sites_new, n_sites_valid*3*sizeof(int));
+        cudaError_t r5 = cudaMallocManaged(&sites_valid_pcopy, n_sites_valid*sizeof(float));
+    }
+    else
+    {
+        sites_valid = (int *) malloc(n_sites_valid*3*sizeof(int));
+        sites_new = (int *) malloc(n_sites_valid*3*sizeof(int));
+        sites_valid_pcopy = (float *) malloc(n_sites_valid*sizeof(float));
+    }
+
     cout << "     n_sites_valid = " << n_sites_valid << endl;
 
     // -------------------------------------------------------
@@ -446,8 +499,18 @@ void growth2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCell,
     const float P_SCALE_3RD = 0.3;  // set it to be 1 if the 3nd nearest neighbour sites are equally likely as the nearest sites to place the new cell
     bool * permit_nb26_d;
     short * ptr_nb26_d;
-    cudaMallocManaged(&ptr_nb26_d, nb26_size*3*sizeof(short));
-    cudaMallocManaged(&permit_nb26_d, nb26_size*sizeof(bool));
+
+    if (UM_ENABLED)
+    {
+        cudaMallocManaged(&ptr_nb26_d, nb26_size*3*sizeof(short));
+        cudaMallocManaged(&permit_nb26_d, nb26_size*sizeof(bool));
+    }
+    else
+    {
+        ptr_nb26_d = (short *) malloc(nb26_size*3*sizeof(short));
+        permit_nb26_d = (bool *) malloc(nb26_size*sizeof(bool));
+    }
+
     vector<vector<int>> nb26Shu = nb26;
     random_shuffle ( nb26Shu.begin(), nb26Shu.end() );
     for (int ss = 0; ss < nb26_size; ss ++)
@@ -484,18 +547,89 @@ void growth2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCell,
 
     // ... prepare random numbers for growth probability
     float * ra01_cp, * ptr_ra_cp;
-    cudaError_t r4 = cudaMallocManaged(&ra01_cp, n_sites_valid*sizeof(float));
+
+    if (UM_ENABLED)
+    {
+        cudaError_t r4 = cudaMallocManaged(&ra01_cp, n_sites_valid*sizeof(float));
+    } else
+    {
+        ra01_cp = (float *) malloc(n_sites_valid*sizeof(float));
+    }
+
     ptr_ra_cp = ra01_cp;
     for (int nra = 0; nra < n_sites_valid; ++ nra) {
         * ptr_ra_cp = dis(gen);
         ptr_ra_cp ++;
     }
 
-    growth_random_kernel<<<blocksPerGrid, threadsPerBlock>>>(tumour, clone, sites_valid, sites_valid_pcopy,
-                                                             n_sites_valid, sites_new,
-                                                             permit_nb26_d, ptr_nb26_d, ra01_cp);
-    cudaDeviceSynchronize();
-    cudaFree(ra01_cp);
+    if (UM_ENABLED)
+    {
+        growth_random_kernel<<<blocksPerGrid, threadsPerBlock>>>(tumour, clone, sites_valid, sites_valid_pcopy,
+                                                                 n_sites_valid, sites_new,
+                                                                 permit_nb26_d, ptr_nb26_d, ra01_cp);
+        cudaDeviceSynchronize();
+        cudaFree(ra01_cp);
+    }
+    else
+    {
+        char * d_tumour;
+        long * d_clone;
+        int * d_sites_valid;
+        float * d_sites_valid_pcopy;
+        int * d_sites_new;
+        bool * d_permit_nb26_d;
+        short * d_ptr_nb26_d;
+        float * d_ra01_cp;
+
+
+        printf("Allocate device memory...\n");
+        CheckCUDARet(cudaMalloc(&d_tumour, N*N*N*sizeof(char)), "cudaMalloc: d_tumour");
+        CheckCUDARet(cudaMalloc(&d_clone, N*N*N*sizeof(long)), "cudaMalloc: d_clone");
+        CheckCUDARet(cudaMalloc(&d_sites_valid, n_sites_valid*3*sizeof(int)), "cudaMalloc: d_sites_valid");
+        CheckCUDARet(cudaMalloc(&d_sites_valid_pcopy, n_sites_valid*sizeof(float)), "cudaMalloc: d_sites_valid_pcopy");
+        CheckCUDARet(cudaMalloc(&d_sites_new, n_sites_valid*3*sizeof(int)), "cudaMalloc: d_sites_new");
+        CheckCUDARet(cudaMalloc(&d_permit_nb26_d, nb26_size*sizeof(bool)), "cudaMalloc: d_permit_nb26_d");
+        CheckCUDARet(cudaMalloc(&d_ptr_nb26_d, nb26_size*3*sizeof(short)), "cudaMalloc: d_ptr_nb26_d");
+        CheckCUDARet(cudaMalloc(&d_ra01_cp, n_sites_valid*sizeof(float)), "cudaMalloc: d_ra01_cp");
+
+        printf("Copy data from host to device...\n");
+        CheckCUDARet(cudaMemcpy(d_tumour, tumour, N*N*N*sizeof(char), cudaMemcpyHostToDevice), "cudaMemcpy: d_tumour");
+        CheckCUDARet(cudaMemcpy(d_clone, clone, N*N*N*sizeof(long), cudaMemcpyHostToDevice), "cudaMemcpy: d_clone");
+        CheckCUDARet(cudaMemcpy(d_sites_valid, sites_valid, n_sites_valid*3*sizeof(int), cudaMemcpyHostToDevice), "cudaMemcpy: d_sites_valid");
+        CheckCUDARet(cudaMemcpy(d_sites_valid_pcopy, sites_valid_pcopy, n_sites_valid*sizeof(float), cudaMemcpyHostToDevice), "cudaMemcpy: d_sites_valid_pcopy");
+        CheckCUDARet(cudaMemcpy(d_sites_new, sites_new, n_sites_valid*3*sizeof(int), cudaMemcpyHostToDevice), "cudaMemcpy: d_sites_new");
+        CheckCUDARet(cudaMemcpy(d_permit_nb26_d, permit_nb26_d, nb26_size*sizeof(bool), cudaMemcpyHostToDevice), "cudaMemcpy: d_permit_nb26_d");
+        CheckCUDARet(cudaMemcpy(d_ptr_nb26_d, ptr_nb26_d, nb26_size*3*sizeof(short), cudaMemcpyHostToDevice), "cudaMemcpy: d_ptr_nb26_d");
+        CheckCUDARet(cudaMemcpy(d_ra01_cp, ra01_cp, n_sites_valid*sizeof(float), cudaMemcpyHostToDevice), "cudaMemcpy: d_ra01_cp");
+
+        printf("Execute GPU code: growth_random_kernel...\n");
+        growth_random_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_tumour, d_clone, d_sites_valid, d_sites_valid_pcopy,
+                                                                              n_sites_valid, d_sites_new,
+                                                                              d_permit_nb26_d, d_ptr_nb26_d, d_ra01_cp);
+
+        printf("Copy data from device to host...\n");
+        CheckCUDARet(cudaMemcpy(tumour, d_tumour, N*N*N*sizeof(char), cudaMemcpyDeviceToHost), "cudaMemcpy: tumour");
+        CheckCUDARet(cudaMemcpy(clone, d_clone, N*N*N*sizeof(long), cudaMemcpyDeviceToHost), "cudaMemcpy: clone");
+        CheckCUDARet(cudaMemcpy(sites_valid, d_sites_valid, n_sites_valid*3*sizeof(int), cudaMemcpyDeviceToHost), "cudaMemcpy: sites_valid");
+        CheckCUDARet(cudaMemcpy(sites_valid_pcopy, d_sites_valid_pcopy, n_sites_valid*sizeof(float), cudaMemcpyDeviceToHost), "cudaMemcpy: sites_valid_pcopy");
+        CheckCUDARet(cudaMemcpy(sites_new, d_sites_new, n_sites_valid*3*sizeof(int), cudaMemcpyDeviceToHost), "cudaMemcpy: sites_new");
+        CheckCUDARet(cudaMemcpy(permit_nb26_d, d_permit_nb26_d, nb26_size*sizeof(bool), cudaMemcpyDeviceToHost), "cudaMemcpy: permit_nb26_d");
+        CheckCUDARet(cudaMemcpy(ptr_nb26_d, d_ptr_nb26_d, nb26_size*3*sizeof(short), cudaMemcpyDeviceToHost), "cudaMemcpy: ptr_nb26_d");
+        CheckCUDARet(cudaMemcpy(ra01_cp, d_ra01_cp, n_sites_valid*sizeof(float), cudaMemcpyDeviceToHost), "cudaMemcpy: ra01_cp");
+
+        printf("Free device memroy...\n");
+        CheckCUDARet(cudaFree(d_tumour), "cudaFree: d_tumour");
+        CheckCUDARet(cudaFree(d_clone), "cudaFree: d_clone");
+        CheckCUDARet(cudaFree(d_sites_valid), "cudaFree: d_sites_valid");
+        CheckCUDARet(cudaFree(d_sites_valid_pcopy), "cudaFree: d_sites_valid_pcopy");
+        CheckCUDARet(cudaFree(d_sites_new), "cudaFree: d_sites_new");
+        CheckCUDARet(cudaFree(d_permit_nb26_d), "cudaFree: d_permit_nb26_d");
+        CheckCUDARet(cudaFree(d_ptr_nb26_d), "cudaFree: d_ptr_nb26_d");
+        CheckCUDARet(cudaFree(d_ra01_cp), "cudaFree: d_ra01_cp");
+
+        free(ra01_cp);
+
+    }
 
     // -------------------------------------------------------
     // [7] add new sites to vecCell according to sites_new
@@ -538,12 +672,24 @@ void growth2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCell,
     // [9] free allocated memory
     // -------------------------------------------------------
     cout << "[9] de-allocate memory" << endl;
-    cudaFree(ptr_nb26_d);
-    cudaFree(permit_nb26_d);
-    cudaFree(ptr_ra);
-    cudaFree(ptr_ra_cp);
-    cudaFree(sites_valid);
-    cudaFree(sites_new);
+    if (UM_ENABLED)
+    {
+        cudaFree(ptr_nb26_d);
+        cudaFree(permit_nb26_d);
+        cudaFree(ptr_ra);
+        cudaFree(ptr_ra_cp);
+        cudaFree(sites_valid);
+        cudaFree(sites_new);
+    }
+    else
+    {
+        free(ptr_nb26_d);
+        free(permit_nb26_d);
+        //free(ptr_ra); // Error: double free detected in tcache 2
+        //free(ptr_ra_cp); // Error: invalid pointer
+        free(sites_valid);
+        free(sites_new);
+    }
 }
 
 // TUMOUR GROWTH growth2_volume()
@@ -567,7 +713,16 @@ void growth2_volume(char * tumour, int * cellids, long * clone, vector<Cell> & v
     // ... prepare random numbers for cell death probability
     int n_sites_is_cell = vecCellShu.size();
     float * ra01, * ptr_ra;
-    cudaError_t rrrr = cudaMallocManaged(&ra01, n_sites_is_cell*sizeof(float));
+
+    if (UM_ENABLED)
+    {
+        cudaError_t rrrr = cudaMallocManaged(&ra01, n_sites_is_cell*sizeof(float));
+    }
+    else
+    {
+        ra01 = (float *) malloc(n_sites_is_cell*sizeof(float));
+    }
+
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<> dis(0, 1);   //uniform distribution between 0 and 1
@@ -645,7 +800,14 @@ void growth2_volume(char * tumour, int * cellids, long * clone, vector<Cell> & v
             }
         }
     }
-    cudaFree(ra01);
+    if (UM_ENABLED)
+    {
+        cudaFree(ra01);
+    }
+    else
+    {
+        free(ra01);
+    }
 
     // -------------------------------------------------------
     // [3] allocate memory for valid sites
@@ -675,8 +837,17 @@ void growth2_volume(char * tumour, int * cellids, long * clone, vector<Cell> & v
         vector<int> loc_c = it_C->get_loc();
         i = loc_c[0]; j = loc_c[1]; k = loc_c[2];
 
-        cudaMallocManaged(&ptr_nb26_d, nb26_size*3*sizeof(short));
-        cudaMallocManaged(&permit_nb26_d, nb26_size*sizeof(bool));
+        if (UM_ENABLED)
+        {
+            cudaMallocManaged(&ptr_nb26_d, nb26_size*3*sizeof(short));
+            cudaMallocManaged(&permit_nb26_d, nb26_size*sizeof(bool));
+        }
+        else
+        {
+            ptr_nb26_d = (short *) malloc(nb26_size*3*sizeof(short));
+            permit_nb26_d = (bool *) malloc(nb26_size*sizeof(bool));
+        }
+
         vector<vector<int>> nb26Shu = nb26;
 
         random_shuffle ( nb26Shu.begin(), nb26Shu.end() );
@@ -817,10 +988,16 @@ void growth2_volume(char * tumour, int * cellids, long * clone, vector<Cell> & v
 
         cid ++;
 
-        cudaFree(ptr_nb26_d);
-        cudaFree(permit_nb26_d);
-
-
+        if (UM_ENABLED)
+        {
+            cudaFree(ptr_nb26_d);
+            cudaFree(permit_nb26_d);
+        }
+        else
+        {
+            free(ptr_nb26_d);
+            free(permit_nb26_d);
+        }
     }
 
     // -------------------------------------------------------
@@ -833,7 +1010,14 @@ void growth2_volume(char * tumour, int * cellids, long * clone, vector<Cell> & v
     // [9] free allocated memory
     // -------------------------------------------------------
     cout << "[8] de-allocate memory" << endl;
-    cudaFree(ptr_ra);
+    if (UM_ENABLED)
+    {
+        cudaFree(ptr_ra);
+    }
+    else
+    {
+        //free(ptr_ra); // Error
+    }
 }
 
 
@@ -847,7 +1031,15 @@ void necrosis2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCel
 
     // a boolean data structure to record which voxel is necrotic
     bool * near_surface;
-    cudaError_t r   = cudaMallocManaged(&near_surface, N*N*N*sizeof(bool));
+
+    if (UM_ENABLED)
+    {
+        cudaError_t r   = cudaMallocManaged(&near_surface, N*N*N*sizeof(bool));
+    }
+    else
+    {
+        near_surface = (bool *) malloc(N*N*N*sizeof(bool));
+    }
 
     // make smaller amount of data for gpu
     vector<vector<int>> vecValidSites;
@@ -868,7 +1060,16 @@ void necrosis2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCel
     }
     int n_sites_valid = vecValidSites.size();
     int * sites_valid;
-    cudaError_t r2 = cudaMallocManaged(&sites_valid, n_sites_valid*3*sizeof(int));
+
+    if (UM_ENABLED)
+    {
+        cudaError_t r2 = cudaMallocManaged(&sites_valid, n_sites_valid*3*sizeof(int));
+    }
+    else
+    {
+        sites_valid = (int *) malloc(n_sites_valid*3*sizeof(int));
+    }
+
     for (int ss = 0; ss < n_sites_valid; ss ++)
     {
         *(sites_valid+ss*3) = vecValidSites[ss][0];
@@ -880,7 +1081,16 @@ void necrosis2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCel
     int n_voxSurf = vecVoxSurf.size();
     n_voxSurf = min(500, n_voxSurf);
     short * ptr_voxSurf_d;
-    cudaMallocManaged(&ptr_voxSurf_d, n_voxSurf*3*sizeof(short));
+
+    if (UM_ENABLED)
+    {
+        cudaMallocManaged(&ptr_voxSurf_d, n_voxSurf*3*sizeof(short));
+    }
+    else
+    {
+        ptr_voxSurf_d = (short *) malloc(n_voxSurf*3*sizeof(short));
+    }
+
     for (int ss = 0; ss < n_voxSurf; ss ++)
     {
         *(ptr_voxSurf_d+ss*3) = vecVoxSurf[ss][0];
@@ -901,8 +1111,41 @@ void necrosis2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCel
     }
     cout << "     KERNEL: blocksPerGrid = " << blocksPerGrid << ", threadsPerBlock = " << threadsPerBlock << endl;
 
-    necrosis_kernel<<<blocksPerGrid, threadsPerBlock>>>(near_surface, n_sites_valid, sites_valid, n_voxSurf, ptr_voxSurf_d);
-    cudaDeviceSynchronize();
+    if (UM_ENABLED)
+    {
+        necrosis_kernel<<<blocksPerGrid, threadsPerBlock>>>(near_surface, n_sites_valid, sites_valid, n_voxSurf, ptr_voxSurf_d);
+        cudaDeviceSynchronize();
+    }
+    else
+    {
+        bool * d_near_surface;
+        int * d_sites_valid;
+        short * d_ptr_voxSurf_d;
+
+        printf("Allocate device memory...");
+        CheckCUDARet(cudaMalloc(&d_near_surface, N*N*N*sizeof(bool)), "cudaMalloc: d_near_surface");
+        CheckCUDARet(cudaMalloc(&d_sites_valid, n_sites_valid*3*sizeof(int)), "cudaMalloc: d_sites_valid");
+        CheckCUDARet(cudaMalloc(&d_ptr_voxSurf_d, n_voxSurf*3*sizeof(short)), "cudaMalloc: d_ptr_voxSurf_d");
+
+        printf("Copy data from host to device...");
+        CheckCUDARet(cudaMemcpy(d_near_surface, near_surface, N*N*N*sizeof(bool), cudaMemcpyHostToDevice), "cudaMemcpy: d_near_surface");
+        CheckCUDARet(cudaMemcpy(d_sites_valid, sites_valid, n_sites_valid*3*sizeof(int), cudaMemcpyHostToDevice), "cudaMemcpy: d_sites_valid");
+        CheckCUDARet(cudaMemcpy(d_ptr_voxSurf_d, ptr_voxSurf_d, n_voxSurf*3*sizeof(short), cudaMemcpyHostToDevice), "cudaMemcpy: d_ptr_voxSurf_d");
+
+        printf("Execute GPU code: necrosis_kernel...");
+        necrosis_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_near_surface, n_sites_valid, d_sites_valid, n_voxSurf, d_ptr_voxSurf_d);
+
+        printf("Copy data from device to host...");
+        CheckCUDARet(cudaMemcpy(near_surface, d_near_surface, N*N*N*sizeof(bool), cudaMemcpyDeviceToHost), "cudaMemcpy: near_surface");
+        CheckCUDARet(cudaMemcpy(sites_valid, d_sites_valid, n_sites_valid*3*sizeof(int), cudaMemcpyDeviceToHost), "cudaMemcpy: sites_valid");
+        CheckCUDARet(cudaMemcpy(ptr_voxSurf_d, d_ptr_voxSurf_d, n_voxSurf*3*sizeof(short), cudaMemcpyDeviceToHost), "cudaMemcpy: ptr_voxSurf_d");
+
+        printf("Free device memory...");
+        CheckCUDARet(cudaFree(d_near_surface), "cudaFree: d_near_surface");
+        CheckCUDARet(cudaFree(d_sites_valid), "cudaFree: d_sites_valid");
+        CheckCUDARet(cudaFree(d_ptr_voxSurf_d), "cudaFree: d_ptr_voxSurf_d");
+    }
+
 
     // update necrosis
     random_device rd;
@@ -946,9 +1189,18 @@ void necrosis2(char * tumour, int * cellids, long * clone, vector<Cell> & vecCel
         }
     }
 
-    cudaFree(near_surface);
-    cudaFree(sites_valid);
-    cudaFree(ptr_voxSurf_d);
+    if (UM_ENABLED)
+    {
+        cudaFree(near_surface);
+        cudaFree(sites_valid);
+        cudaFree(ptr_voxSurf_d);
+    }
+    else
+    {
+        free(near_surface);
+        free(sites_valid);
+        free(ptr_voxSurf_d);
+    }
 }
 
 void update_surface2(char * tumour, vector<vector<int>> & vecVoxSurf)
@@ -958,7 +1210,18 @@ void update_surface2(char * tumour, vector<vector<int>> & vecVoxSurf)
     cudaError_t r   = cudaMallocManaged(&surface, N*N*N*sizeof(bool));
 
     short * ptr_nb26_d;
-    cudaMallocManaged(&ptr_nb26_d, nb26_size*3*sizeof(short));
+
+    if (UM_ENABLED)
+    {
+        cudaError_t r   = cudaMallocManaged(&surface, N*N*N*sizeof(bool));
+        cudaMallocManaged(&ptr_nb26_d, nb26_size*3*sizeof(short));
+    }
+    else
+    {
+        surface = (bool *) malloc(N*N*N*sizeof(bool));
+        ptr_nb26_d = (short *) malloc(nb26_size*3*sizeof(short));
+    }
+
     vector<vector<int>> nb26Shu = nb26;
     random_shuffle ( nb26Shu.begin(), nb26Shu.end() );
     for (int ss = 0; ss < nb26_size; ss ++)
@@ -973,8 +1236,40 @@ void update_surface2(char * tumour, vector<vector<int>> & vecVoxSurf)
     blocksPerGrid = ceil(float(N*N*N)/float(threadsPerBlock));
     cout << "     KERNEL: blocksPerGrid = " << blocksPerGrid << ", threadsPerBlock = " << threadsPerBlock << endl;
 
-    update_surface_kernel<<<blocksPerGrid, threadsPerBlock>>>(tumour, surface, ptr_nb26_d);
-    cudaDeviceSynchronize();
+    if (UM_ENABLED)
+    {
+        update_surface_kernel<<<blocksPerGrid, threadsPerBlock>>>(tumour, surface, ptr_nb26_d);
+        cudaDeviceSynchronize();
+    }
+    else
+    {
+        char * d_tumour;
+        bool * d_surface;
+        short * d_ptr_nb26_d;
+
+        printf("Allocate device memory...\n");
+        CheckCUDARet(cudaMalloc(&d_tumour, N*N*N*sizeof(char)), "cudaMalloc: d_tumour");
+        CheckCUDARet(cudaMalloc(&d_surface, N*N*N*sizeof(bool)), "cudaMalloc: d_tsurface");
+        CheckCUDARet(cudaMalloc(&d_ptr_nb26_d, nb26_size*3*sizeof(short)), "cudaMalloc: d_ptr_nb26_d");
+
+        printf("Copy data from host to device...\n");
+        CheckCUDARet(cudaMemcpy(d_tumour, tumour, N*N*N*sizeof(char), cudaMemcpyHostToDevice), "cudaMemcpy: d_tumour");
+        CheckCUDARet(cudaMemcpy(d_surface, surface, N*N*N*sizeof(bool), cudaMemcpyHostToDevice), "cudaMemcpy: d_surace");
+        CheckCUDARet(cudaMemcpy(d_ptr_nb26_d, ptr_nb26_d, nb26_size*3*sizeof(short), cudaMemcpyHostToDevice), "cudaMemcpy: d_ptr_nb26_d");
+
+        printf("Execute GPU code: update_surface_kernel...\n");
+        update_surface_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_tumour, d_surface, d_ptr_nb26_d);
+
+        printf("Copy data from device to host...\n");
+        CheckCUDARet(cudaMemcpy(tumour, d_tumour, N*N*N*sizeof(char), cudaMemcpyDeviceToHost), "cudaMemcpy: tumour"); // illegal memory access
+        CheckCUDARet(cudaMemcpy(surface, d_surface, N*N*N*sizeof(bool), cudaMemcpyDeviceToHost), "cudaMemcpy: surface"); // illegal memory access
+        CheckCUDARet(cudaMemcpy(ptr_nb26_d, d_ptr_nb26_d, nb26_size*3*sizeof(short), cudaMemcpyDeviceToHost), "cudaMemcpy: ptr_nb26_d"); // illegal memory access
+
+        printf("Free device memory...\n");
+        CheckCUDARet(cudaFree(d_tumour), "cudaFree: d_tumour");
+        CheckCUDARet(cudaFree(d_surface), "cudaFree, d_surface");
+        CheckCUDARet(cudaFree(d_ptr_nb26_d), "cudaFree, d_ptr_nb26_d");
+    }
 
     // update vecVoxSurf
     for (int i = 0; i < N; i ++)
@@ -993,8 +1288,16 @@ void update_surface2(char * tumour, vector<vector<int>> & vecVoxSurf)
         }
     }
 
-    cudaFree(surface);
-    cudaFree(ptr_nb26_d);
+    if (UM_ENABLED)
+    {
+        cudaFree(surface);
+        cudaFree(ptr_nb26_d);
+    }
+    else
+    {
+        free(surface);
+        free(ptr_nb26_d);
+    }
 }
 
 // acquire driver mutations/SCNAs upon proliferation (typeCloneCreate == "emergeRCC")
